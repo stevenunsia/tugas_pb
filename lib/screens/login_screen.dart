@@ -4,30 +4,43 @@ import 'movie_reviews_screen.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
   @override
-  _LoginScreenState createState() => _LoginScreenState();
+  LoginScreenState createState() => LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class LoginScreenState extends State<LoginScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _apiService = ApiService();
+  final ApiService _apiService = ApiService();
 
   void _login() async {
-    if (_usernameController.text.isEmpty || _passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Username dan password tidak boleh kosong')));
+    final username = _usernameController.text;
+    final password = _passwordController.text;
+
+    if (username.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Username or password is empty')),
+      );
       return;
     }
-    final success = await _apiService.loginUser(_usernameController.text, _passwordController.text);
-    if (success) {
+
+    final user = await _apiService.loginUser(username, password);
+
+    if (user != null) {
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => MovieReviewsScreen(username: _usernameController.text),
+          builder: (context) => MovieReviewsScreen(username: username),
         ),
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Login gagal. Silakan cek username/password.')));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Login failed. Please check your username/password.')),
+      );
     }
   }
 

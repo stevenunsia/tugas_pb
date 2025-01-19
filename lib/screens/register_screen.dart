@@ -1,43 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:logging/logging.dart';
 import '../api_service.dart';
 
 class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
+
   @override
-  _RegisterScreenState createState() => _RegisterScreenState();
+  RegisterScreenState createState() => RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
-  final _usernameController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _apiService = ApiService();
-
-  void _register() async {
-    // Periksa apakah username sudah terdaftar
-    final usernameExists = await _apiService.checkUsernameExists(_usernameController.text);
-    if (usernameExists) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Username sudah terdaftar. Silakan gunakan yang lain.')),
-      );
-      return;
-    }
-    // Lanjutkan registrasi jika username belum ada
-    final success = await _apiService.registerUser(
-      _usernameController.text,
-      _passwordController.text,
-    );
-    if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Registrasi berhasil! Silakan login.')),
-      );
-      _usernameController.clear();
-      _passwordController.clear();
-      Navigator.pop(context);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Registrasi gagal. Silakan coba lagi.')),
-      );
-    }
-  }
+class RegisterScreenState extends State<RegisterScreen> {
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final Logger _logger = Logger('RegisterScreen');
+  final ApiService _apiService = ApiService();
 
   @override
   Widget build(BuildContext context) {
@@ -66,5 +42,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _register() async {
+    final username = _usernameController.text;
+    final password = _passwordController.text;
+
+    if (username.isEmpty || password.isEmpty) {
+      _logger.warning('Username or password is empty');
+      return;
+    }
+
+    try {
+      final success = await _apiService.registerUser(username, password);
+      if (success) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Registration successful!')),
+        );
+        Navigator.of(context).pop();
+      } else {
+        _logger.severe('Registration failed');
+      }
+    } catch (error) {
+      _logger.severe('Error during registration: $error');
+    }
   }
 }
